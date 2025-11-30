@@ -86,6 +86,9 @@ const agentProcess = spawn('pnpm', ['run', 'dev'], {
   stdio: 'inherit',
   shell: false,
   cwd: process.cwd(),
+  env: {
+    ...process.env, // Inherit all environment variables
+  },
 });
 
 agentProcess.on('error', (error) => {
