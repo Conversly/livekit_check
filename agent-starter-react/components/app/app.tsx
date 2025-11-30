@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { RoomAudioRenderer, StartAudio } from '@livekit/components-react';
-import type { AppConfig } from '@/app-config';
-import { ViewController } from '@/components/app/view-controller';
-import { Toaster } from '@/components/livekit/toaster';
-import { useAgentErrors } from '@/hooks/useAgentErrors';
-import { ConnectionProvider } from '@/hooks/useConnection';
-import { useDebugMode } from '@/hooks/useDebug';
+import { RoomAudioRenderer, StartAudio } from "@livekit/components-react";
+import type { AppConfig } from "@/app-config";
+import { ViewController } from "@/components/app/view-controller";
+import { Toaster } from "@/components/livekit/toaster";
+import { useAgentErrors } from "@/hooks/useAgentErrors";
+import { ConnectionProvider } from "@/hooks/useConnection";
+import { useDebugMode } from "@/hooks/useDebug";
 
-const IN_DEVELOPMENT = process.env.NODE_ENV !== 'production';
+const IN_DEVELOPMENT = process.env.NODE_ENV !== "production";
 
 function AppSetup() {
   useDebugMode({ enabled: IN_DEVELOPMENT });

@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { createContext, useContext, useMemo, useState } from 'react';
-import { TokenSource } from 'livekit-client';
-import { SessionProvider, useSession } from '@livekit/components-react';
-import type { AppConfig } from '@/app-config';
+import { createContext, useContext, useMemo, useState } from "react";
+import { TokenSource } from "livekit-client";
+import { SessionProvider, useSession } from "@livekit/components-react";
+import type { AppConfig } from "@/app-config";
 
 interface ConnectionContextType {
   isConnectionActive: boolean;
@@ -22,7 +22,7 @@ const ConnectionContext = createContext<ConnectionContextType>({
 export function useConnection() {
   const ctx = useContext(ConnectionContext);
   if (!ctx) {
-    throw new Error('useConnection must be used within a ConnectionProvider');
+    throw new Error("useConnection must be used within a ConnectionProvider");
   }
   return ctx;
 }
@@ -32,20 +32,26 @@ interface ConnectionProviderProps {
   children: React.ReactNode;
 }
 
-export function ConnectionProvider({ appConfig, children }: ConnectionProviderProps) {
+export function ConnectionProvider({
+  appConfig,
+  children,
+}: ConnectionProviderProps) {
   const [isConnectionActive, setIsConnectionActive] = useState(false);
 
   const tokenSource = useMemo(() => {
-    if (typeof process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT === 'string') {
+    if (typeof process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT === "string") {
       return TokenSource.custom(async () => {
-        const url = new URL(process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT!, window.location.origin);
+        const url = new URL(
+          process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT!,
+          window.location.origin,
+        );
 
         try {
           const res = await fetch(url.toString(), {
-            method: 'POST',
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
-              'X-Sandbox-Id': appConfig.sandboxId ?? '',
+              "Content-Type": "application/json",
+              "X-Sandbox-Id": appConfig.sandboxId ?? "",
             },
             body: JSON.stringify({
               room_config: appConfig.agentName
@@ -57,18 +63,18 @@ export function ConnectionProvider({ appConfig, children }: ConnectionProviderPr
           });
           return await res.json();
         } catch (error) {
-          console.error('Error fetching connection details:', error);
-          throw new Error('Error fetching connection details!');
+          console.error("Error fetching connection details:", error);
+          throw new Error("Error fetching connection details!");
         }
       });
     }
 
-    return TokenSource.endpoint('/api/connection-details');
+    return TokenSource.endpoint("/api/connection-details");
   }, [appConfig]);
 
   const session = useSession(
     tokenSource,
-    appConfig.agentName ? { agentName: appConfig.agentName } : undefined
+    appConfig.agentName ? { agentName: appConfig.agentName } : undefined,
   );
 
   const { start: startSession, end: endSession } = session;
@@ -91,7 +97,9 @@ export function ConnectionProvider({ appConfig, children }: ConnectionProviderPr
 
   return (
     <SessionProvider session={session}>
-      <ConnectionContext.Provider value={value}>{children}</ConnectionContext.Provider>
+      <ConnectionContext.Provider value={value}>
+        {children}
+      </ConnectionContext.Provider>
     </SessionProvider>
   );
 }

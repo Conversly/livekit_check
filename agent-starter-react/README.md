@@ -78,20 +78,20 @@ This starter is designed to be flexible so you can adapt it to your specific age
 
 ```ts
 export const APP_CONFIG_DEFAULTS: AppConfig = {
-  companyName: 'LiveKit',
-  pageTitle: 'LiveKit Voice Agent',
-  pageDescription: 'A voice agent built with LiveKit',
+  companyName: "LiveKit",
+  pageTitle: "LiveKit Voice Agent",
+  pageDescription: "A voice agent built with LiveKit",
 
   supportsChatInput: true,
   supportsVideoInput: true,
   supportsScreenShare: true,
   isPreConnectBufferEnabled: true,
 
-  logo: '/lk-logo.svg',
-  accent: '#002cf2',
-  logoDark: '/lk-logo-dark.svg',
-  accentDark: '#1fd5f9',
-  startButtonText: 'Start call',
+  logo: "/lk-logo.svg",
+  accent: "#002cf2",
+  logoDark: "/lk-logo-dark.svg",
+  accentDark: "#1fd5f9",
+  startButtonText: "Start call",
 
   // for LiveKit Cloud Sandbox
   sandboxId: undefined,
@@ -116,25 +116,6 @@ LIVEKIT_URL=https://your-livekit-server-url
 ```
 
 These are required for the voice agent functionality to work with your LiveKit project.
-
-### Outbound phone calls (Twilio + SIP)
-
-The UI now supports dialing a PSTN number so a caller can speak with your agent over the phone while you monitor the room. To enable this:
-
-1. **Create a Twilio Elastic SIP trunk** that supports both origination and termination. Associate your purchased Twilio number with the trunk, configure an origination URI that points to your LiveKit SIP domain (`sip:<project-id>.sip.livekit.cloud`), and add a credential list for outbound auth (username/password).
-2. **Create matching LiveKit SIP trunks** using the CLI or Cloud console:
-   - Inbound trunk: reference the Twilio origination policy so inbound calls can land in LiveKit.
-   - Outbound trunk: set the `address` to `<your-trunk>.pstn.twilio.com`, provide the same username/password, and include the numbers you want to place calls from.
-3. **Grab the outbound trunk ID** (`lk sip outbound list`) and add the following env vars to `agent-starter-react/.env.local`:
-
-```env
-LIVEKIT_SIP_TRUNK_ID=TR_xxx
-LIVEKIT_SIP_FROM_NUMBER=+14155550100 # optional override, defaults to trunk-configured number
-```
-
-4. **Restart Next.js** so the API route picks up the variables. After you connect to the agent, use the new “Call phone” form at the bottom of the UI to start a Twilio call into the same LiveKit room. Phone numbers must be E.164 formatted (`+<country><number>`).
-
-> ℹ️ The agent worker must be configured with the same `agent_name` the UI references so LiveKit dispatches it into the room before you dial.
 
 ## Contributing
 

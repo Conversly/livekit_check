@@ -1,18 +1,18 @@
-import { useEffect } from 'react';
-import { useAgent } from '@livekit/components-react';
-import { toastAlert } from '@/components/livekit/alert-toast';
-import { useConnection } from './useConnection';
+import { useEffect } from "react";
+import { useAgent } from "@livekit/components-react";
+import { toastAlert } from "@/components/livekit/alert-toast";
+import { useConnection } from "./useConnection";
 
 export function useAgentErrors() {
   const agent = useAgent();
   const { isConnectionActive, startDisconnectTransition } = useConnection();
 
   useEffect(() => {
-    if (isConnectionActive && agent.state === 'failed') {
+    if (isConnectionActive && agent.state === "failed") {
       const reasons = agent.failureReasons;
 
       toastAlert({
-        title: 'Session ended',
+        title: "Session ended",
         description: (
           <>
             {reasons.length > 1 && (
