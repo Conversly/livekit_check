@@ -1,3 +1,4 @@
+import json
 import logging
 
 from dotenv import load_dotenv
@@ -23,12 +24,14 @@ load_dotenv(".env")
 
 
 class Assistant(Agent):
-    def __init__(self) -> None:
-        super().__init__(
-            instructions="""You are Raghu, a helpful voice AI assistant. The user is interacting with you via voice, even if you perceive the conversation as text.
+    def __init__(self, instructions: str = None) -> None:
+        default_instructions = """You are Raghu, a helpful voice AI assistant. The user is interacting with you via voice, even if you perceive the conversation as text.
             You eagerly assist users with their questions by providing information from your extensive knowledge.
             Your responses are concise, to the point, and without any complex formatting or punctuation including emojis, asterisks, or other symbols.
-            You are curious, friendly, and have a sense of humor.""",
+            You are curious, friendly, and have a sense of humor."""
+        
+        super().__init__(
+            instructions=instructions or default_instructions,
         )
 
     # To add tools, use the @function_tool decorator.
@@ -73,14 +76,36 @@ async def my_agent(ctx: JobContext):
         "room": ctx.room.name,
     }
 
-    # Set up a voice AI pipeline
+    # Read configuration from room metadata or job metadata
+    config = {}
+    try:
+        if ctx.room.metadata:
+            config = json.loads(ctx.room.metadata)
+        elif ctx.job.metadata:
+            config = json.loads(ctx.job.metadata)
+    except (json.JSONDecodeError, AttributeError):
+        logger.warning("Failed to parse metadata, using defaults")
+        config = {}
+
+    # Extract configuration with defaults
+    agent_instructions = config.get("instructions", None)
+    stt_model = config.get("stt_model", "deepgram/nova-2")
+    stt_language = config.get("stt_language", "hi")
+    llm_model = config.get("llm_model", "google/gemini-2.5-flash-lite")
+    tts_model = config.get("tts_model", "elevenlabs/eleven_multilingual_v2")
+    tts_voice = config.get("tts_voice", "TX3LPaxmHKxFdv7VOQHJ")
+    tts_language = config.get("tts_language", "hi")
+
+    logger.info(f"Agent configuration: STT={stt_model}, LLM={llm_model}, TTS={tts_model}")
+
+    # Set up a voice AI pipeline with dynamic configuration
     session = AgentSession(
-        stt=inference.STT(model="deepgram/nova-2", language="hi"),
-        llm=inference.LLM(model="google/gemini-2.5-flash-lite"),
+        stt=inference.STT(model=stt_model, language=stt_language),
+        llm=inference.LLM(model=llm_model),
         tts=inference.TTS(
-            model="elevenlabs/eleven_multilingual_v2",
-            voice="TX3LPaxmHKxFdv7VOQHJ",
-            language="hi"
+            model=tts_model,
+            voice=tts_voice,
+            language=tts_language
         ),
         turn_detection=MultilingualModel(),
         vad=ctx.proc.userdata["vad"],
@@ -107,7 +132,7 @@ async def my_agent(ctx: JobContext):
 
     # Start the session, which initializes the voice pipeline and warms up the models
     await session.start(
-        agent=Assistant(),
+        agent=Assistant(instructions=agent_instructions),
         room=ctx.room,
         room_options=room_io.RoomOptions(
             audio_input=room_io.AudioInputOptions(
