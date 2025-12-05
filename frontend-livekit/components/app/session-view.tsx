@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { ConnectionState } from 'livekit-client';
 import { motion } from 'motion/react';
-import { useSessionContext, useSessionMessages } from '@livekit/components-react';
+import { useChat, useConnectionState, useRoomContext, useRemoteParticipants } from '@livekit/components-react';
 import type { AppConfig } from '@/app-config';
 import { ChatTranscript } from '@/components/app/chat-transcript';
 import { PreConnectMessage } from '@/components/app/preconnect-message';
@@ -64,10 +65,22 @@ export const SessionView = ({
   appConfig,
   ...props
 }: React.ComponentProps<'section'> & SessionViewProps) => {
-  const session = useSessionContext();
-  const { messages } = useSessionMessages(session);
-  const [chatOpen, setChatOpen] = useState(false);
+  const room = useRoomContext();
+  const connectionState = useConnectionState(room);
+  const { chatMessages: messages } = useChat();
+  const remoteParticipants = useRemoteParticipants();
+  const [chatOpen, setChatOpen] = useState(true); // Changed to true to show transcript by default
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  
+  // Check if agent participant has joined
+  const hasAgent = remoteParticipants.some((p) => p.isAgent || p.metadata?.includes('"agent":true'));
+
+  // Debug: Log messages to see if they're being received
+  React.useEffect(() => {
+    if (messages.length > 0) {
+      console.log('Chat messages received:', messages.length, messages);
+    }
+  }, [messages]);
 
   const controls: ControlBarControls = {
     leave: true,
@@ -91,22 +104,22 @@ export const SessionView = ({
       {/* Chat Transcript */}
       <div
         className={cn(
-          'fixed inset-0 grid grid-cols-1 grid-rows-1',
-          !chatOpen && 'pointer-events-none'
+          'fixed inset-0 grid grid-cols-1 grid-rows-1 transition-opacity duration-300',
+          !chatOpen && 'pointer-events-none opacity-0'
         )}
       >
         <Fade top className="absolute inset-x-4 top-0 h-40" />
         <ScrollArea ref={scrollAreaRef} className="px-4 pt-40 pb-[150px] md:px-6 md:pb-[200px]">
           <ChatTranscript
-            hidden={!chatOpen}
+            hidden={false}
             messages={messages}
-            className="mx-auto max-w-2xl space-y-3 transition-opacity duration-300 ease-out"
+            className="mx-auto max-w-2xl space-y-3"
           />
         </ScrollArea>
       </div>
 
-      {/* Tile Layout */}
-      <TileLayout chatOpen={chatOpen} />
+      {/* Tile Layout - Only render when agent has joined */}
+      {hasAgent && <TileLayout chatOpen={chatOpen} />}
 
       {/* Bottom */}
       <MotionBottom
@@ -120,8 +133,8 @@ export const SessionView = ({
           <Fade bottom className="absolute inset-x-0 top-0 h-4 -translate-y-full" />
           <AgentControlBar
             controls={controls}
-            isConnected={session.isConnected}
-            onDisconnect={session.end}
+            isConnected={connectionState === ConnectionState.Connected}
+            onDisconnect={() => room.disconnect()}
             onChatOpenChange={setChatOpen}
           />
         </div>

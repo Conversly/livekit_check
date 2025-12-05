@@ -1,14 +1,30 @@
 import { useEffect } from 'react';
-import { useAgent, useSessionContext } from '@livekit/components-react';
+import { ConnectionState } from 'livekit-client';
+import { useConnectionState, useRoomContext, useRemoteParticipants } from '@livekit/components-react';
 import { toastAlert } from '@/components/livekit/alert-toast';
 
 export function useAgentErrors() {
-  const agent = useAgent();
-  const { isConnected, end } = useSessionContext();
+  const room = useRoomContext();
+  const connectionState = useConnectionState(room);
+  const remoteParticipants = useRemoteParticipants();
 
   useEffect(() => {
-    if (isConnected && agent.state === 'failed') {
-      const reasons = agent.failureReasons;
+    if (connectionState !== ConnectionState.Connected) return;
+
+    // Find agent participant
+    const agentParticipant = remoteParticipants.find(
+      (p) => p.isAgent || p.metadata?.includes('"agent":true')
+    );
+
+    if (!agentParticipant) return;
+
+    // Check for agent attributes that indicate failure
+    const attributes = agentParticipant.attributes;
+    const agentState = attributes?.['lk.agent.state'];
+    
+    if (agentState === 'failed') {
+      const failureReason = attributes?.['lk.agent.failure_reason'] || 'Unknown error';
+      const reasons = failureReason.split(',').map((r: string) => r.trim());
 
       toastAlert({
         title: 'Session ended',
@@ -37,7 +53,7 @@ export function useAgentErrors() {
         ),
       });
 
-      end();
+      room.disconnect();
     }
-  }, [agent, isConnected, end]);
+  }, [connectionState, remoteParticipants, room]);
 }

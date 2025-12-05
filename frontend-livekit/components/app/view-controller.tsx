@@ -1,7 +1,8 @@
 'use client';
 
+import { ConnectionState } from 'livekit-client';
 import { AnimatePresence, motion } from 'motion/react';
-import { useSessionContext } from '@livekit/components-react';
+import { useConnectionState, useRoomContext } from '@livekit/components-react';
 import type { AppConfig } from '@/app-config';
 import { SessionView } from '@/components/app/session-view';
 import { WelcomeView } from '@/components/app/welcome-view';
@@ -29,10 +30,13 @@ const VIEW_MOTION_PROPS = {
 
 interface ViewControllerProps {
   appConfig: AppConfig;
+  onStart: () => void;
 }
 
-export function ViewController({ appConfig }: ViewControllerProps) {
-  const { isConnected, start } = useSessionContext();
+export function ViewController({ appConfig, onStart }: ViewControllerProps) {
+  const room = useRoomContext();
+  const connectionState = useConnectionState(room);
+  const isConnected = connectionState === ConnectionState.Connected;
 
   return (
     <AnimatePresence mode="wait">
@@ -42,7 +46,7 @@ export function ViewController({ appConfig }: ViewControllerProps) {
           key="welcome"
           {...VIEW_MOTION_PROPS}
           startButtonText={appConfig.startButtonText}
-          onStartCall={start}
+          onStartCall={onStart}
         />
       )}
       {/* Session view */}

@@ -31,7 +31,13 @@ export async function POST(req: Request) {
 
     // Parse agent configuration from request body
     const body = await req.json();
+    console.log('[Connection Details] Received request body:', JSON.stringify(body, null, 2));
+
     const agentName: string = body?.room_config?.agents?.[0]?.agent_name;
+    const agentConfig = body?.agent_config;
+
+    console.log('[Connection Details] Agent name:', agentName);
+    console.log('[Connection Details] Agent config:', JSON.stringify(agentConfig, null, 2));
 
     // Generate participant token
     const participantName = 'user';
@@ -39,10 +45,16 @@ export async function POST(req: Request) {
     const roomName = `voice_assistant_room_${Math.floor(Math.random() * 10_000)}`;
 
     const participantToken = await createParticipantToken(
-      { identity: participantIdentity, name: participantName },
+      {
+        identity: participantIdentity,
+        name: participantName,
+      },
       roomName,
-      agentName
+      agentName,
+      agentConfig
     );
+
+    console.log('[Connection Details] Generated token for room:', roomName);
 
     // Return connection details
     const data: ConnectionDetails = {
@@ -57,7 +69,7 @@ export async function POST(req: Request) {
     return NextResponse.json(data, { headers });
   } catch (error) {
     if (error instanceof Error) {
-      console.error(error);
+      console.error('[Connection Details] Error:', error);
       return new NextResponse(error.message, { status: 500 });
     }
   }
@@ -66,7 +78,8 @@ export async function POST(req: Request) {
 function createParticipantToken(
   userInfo: AccessTokenOptions,
   roomName: string,
-  agentName?: string
+  agentName?: string,
+  agentConfig?: any
 ): Promise<string> {
   const at = new AccessToken(API_KEY, API_SECRET, {
     ...userInfo,
@@ -83,7 +96,10 @@ function createParticipantToken(
 
   if (agentName) {
     at.roomConfig = new RoomConfiguration({
-      agents: [{ agentName }],
+      agents: [{
+        agentName,
+        metadata: agentConfig ? JSON.stringify(agentConfig) : undefined,
+      }],
     });
   }
 
