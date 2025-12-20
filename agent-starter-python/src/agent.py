@@ -13,7 +13,7 @@ from livekit.agents import (
     cli,
     room_io,
 )
-from livekit.plugins import noise_cancellation, silero, google, assemblyai, elevenlabs
+from livekit.plugins import noise_cancellation, silero, google, assemblyai
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 logger = logging.getLogger("agent")
@@ -90,16 +90,15 @@ async def my_agent(ctx: JobContext):
     # LLM configuration - using Google Gemini 2.5 Flash Lite (hardcoded)
     llm_model = "gemini-2.5-flash-lite"
     
-    # TTS configuration - using ElevenLabs Multilingual v2 (hardcoded)
-    tts_voice = config.get("tts_voice", "21m00Tcm4TlvDq8ikWAM")  # Rachel (default)
-    tts_model = "eleven_multilingual_v2"
+    # TTS configuration - using Google Gemini TTS (free tier)
+    tts_voice = config.get("tts_voice", "Zephyr")
     tts_language = config.get("tts_language", "en")
 
     logger.info("=" * 50)
     logger.info("Final Agent Configuration:")
     logger.info(f"  STT: AssemblyAI (lang={stt_language})")
     logger.info(f"  LLM: Google Gemini ({llm_model})")
-    logger.info(f"  TTS: ElevenLabs Multilingual v2 (voice={tts_voice}, lang={tts_language})")
+    logger.info(f"  TTS: Google Gemini TTS (voice={tts_voice}, lang={tts_language})")
     logger.info(f"  Instructions: {instructions[:100]}...")
     logger.info("=" * 50)
 
@@ -112,9 +111,11 @@ async def my_agent(ctx: JobContext):
         model=llm_model,
     )
     
-    # TTS - using ElevenLabs
-    tts = elevenlabs.TTS(
-        voice_id=tts_voice,
+    # TTS - using Google Gemini TTS (free tier)
+    tts = google.beta.GeminiTTS(
+        model="gemini-2.5-flash-preview-tts",
+        voice_name=tts_voice,
+        instructions="Speak in a friendly and engaging tone.",
     )
 
     # Set up a voice AI pipeline

@@ -8,176 +8,130 @@ export interface AgentConfigState {
 }
 
 export const defaultAgentConfig: AgentConfigState = {
-  instructions: `You are a Raghu helpful voice AI assistant. The user is interacting with you via voice, even if you perceive the conversation as text.
-You eagerly assist users with their questions by providing information from your extensive knowledge.
-Your responses are concise, to the point, and without any complex formatting or punctuation including emojis, asterisks, or other symbols.
-You are curious, friendly, and have a sense of humor.`,
+  instructions: `You are Raghu, a helpful voice AI assistant. The user is interacting with you via voice, even if you perceive the conversation as text.
+            You eagerly assist users with their questions by providing information from your extensive knowledge.
+            Your responses are concise, to the point, and without any complex formatting or punctuation including emojis, asterisks, or other symbols.
+            You are curious, friendly, and have a sense of humor.`,
   stt_language: 'en',
-  tts_voice: '21m00Tcm4TlvDq8ikWAM', // Rachel
+  tts_voice: 'Zephyr', // Google Gemini TTS free-tier voice
   tts_language: 'en',
 };
 
-// Common ElevenLabs voice options
-const ELEVENLABS_VOICES = [
-  { id: 'TX3LPaxmHKxFdv7VOQHJ', name: 'Rachel (Female, American)' },
-  { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Bella (Female, American)' },
-  { id: 'AZnzlk1XvdvUeBnXmlld', name: 'Domi (Female, American)' },
-  { id: 'pNInz6obpgDQGcFmaJgB', name: 'Adam (Male, American)' },
-  { id: 'yoZ06aMxZJJ28mfd3POQ', name: 'Sam (Male, Narration)' },
-  { id: '21m00Tcm4TlvDq8ikWAM', name: 'Rachel (Female, Calm)' },
-  { id: 'MF3mGyEYCl7XYWbV9V6O', name: 'Emily (Female, British)' },
-  { id: 'IKne3meq5aSn9XLyUdCD', name: 'Charlie (Male, Australian)' },
+const GOOGLE_TTS_VOICES = [
+  { id: 'Kore', name: 'Kore (Default)' },
+  { id: 'Zephyr', name: 'Zephyr' },
 ];
 
 interface AgentConfigProps {
   config: AgentConfigState;
   onConfigChange: (config: AgentConfigState) => void;
-  isConfigPhase?: boolean;
 }
 
-export function AgentConfig({ config, onConfigChange, isConfigPhase = false }: AgentConfigProps) {
-  const [isExpanded, setIsExpanded] = React.useState(true);
-  const [customVoice, setCustomVoice] = React.useState('');
-
-  // Check if current voice is a custom one (not in presets)
-  const isCustomVoice = !ELEVENLABS_VOICES.some(v => v.id === config.tts_voice);
+export function AgentConfig({ config, onConfigChange }: AgentConfigProps) {
+  const [isSaved, setIsSaved] = React.useState(false);
 
   const handleChange = (field: keyof AgentConfigState, value: string) => {
     onConfigChange({ ...config, [field]: value });
+    setIsSaved(false);
   };
 
-  const handleVoiceChange = (value: string) => {
-    if (value === 'custom') {
-      // Keep current voice if switching to custom mode
-      return;
-    }
-    handleChange('tts_voice', value);
-    setCustomVoice('');
-  };
-
-  const handleCustomVoiceChange = (value: string) => {
-    setCustomVoice(value);
-    if (value.trim()) {
-      handleChange('tts_voice', value.trim());
-    }
+  const handleSave = () => {
+    // Config is auto-saved via useEffect in App component
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 2000);
   };
 
   const handleReset = () => {
     onConfigChange(defaultAgentConfig);
     localStorage.removeItem('agentConfig');
-    setCustomVoice('');
+    setIsSaved(false);
   };
 
-  const inputClass = "w-full rounded-lg border border-white/20 bg-white/10 p-3 text-sm text-white placeholder-white/40 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors";
-  const labelClass = "block text-sm font-medium text-white/80 mb-2";
-
   return (
-    <div className={`w-full rounded-xl border border-white/10 bg-black/40 backdrop-blur-xl overflow-hidden ${isConfigPhase ? '' : 'absolute top-4 left-4 z-50 max-w-xs'}`}>
-      {/* Header */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
-      >
-        <h3 className="text-lg font-bold text-white">⚙️ Agent Configuration</h3>
-        <span className={`text-white/60 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
-          ▼
-        </span>
-      </button>
+    <div className="absolute top-4 left-4 z-50 max-h-[80vh] w-80 overflow-y-auto rounded-lg border border-white/10 bg-black/80 p-4 text-white backdrop-blur-md">
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-lg font-bold">Agent Configuration</h3>
+        {isSaved && <span className="text-xs text-green-400">✓ Saved</span>}
+      </div>
 
-      {isExpanded && (
-        <div className="p-4 pt-0 space-y-4">
-          {/* Instructions */}
-          <div>
-            <label className={labelClass}>System Instructions</label>
-            <textarea
-              value={config.instructions}
-              onChange={(e) => handleChange('instructions', e.target.value)}
-              className={`${inputClass} h-28 resize-none`}
-              placeholder="Enter the AI's personality and behavior instructions..."
-            />
-          </div>
+      <div className="space-y-4">
+        <div>
+          <label className="mb-1 block text-sm font-medium">Instructions</label>
+          <textarea
+            value={config.instructions}
+            onChange={(e) => handleChange('instructions', e.target.value)}
+            className="h-32 w-full rounded border border-white/10 bg-white/5 p-2 text-sm focus:border-white/30 focus:outline-none"
+          />
+        </div>
 
-          {/* Two column layout for language dropdowns */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* STT Language */}
-            <div>
-              <label className={labelClass}>Input Language</label>
-              <select
-                value={config.stt_language}
-                onChange={(e) => handleChange('stt_language', e.target.value)}
-                className={inputClass}
-              >
-                <option value="en">English</option>
-                <option value="hi">Hindi</option>
-                <option value="es">Spanish</option>
-                <option value="fr">French</option>
-                <option value="de">German</option>
-                <option value="ja">Japanese</option>
-              </select>
-            </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium">STT Language</label>
+          <select
+            value={config.stt_language}
+            onChange={(e) => handleChange('stt_language', e.target.value)}
+            className="w-full rounded border border-white/10 bg-white/5 p-2 text-sm focus:border-white/30 focus:outline-none"
+          >
+            <option value="en">English</option>
+            <option value="hi">Hindi</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+          </select>
+        </div>
 
-            {/* TTS Language */}
-            <div>
-              <label className={labelClass}>Output Language</label>
-              <select
-                value={config.tts_language}
-                onChange={(e) => handleChange('tts_language', e.target.value)}
-                className={inputClass}
-              >
-                <option value="en">English</option>
-                <option value="hi">Hindi</option>
-                <option value="es">Spanish</option>
-                <option value="fr">French</option>
-                <option value="de">German</option>
-                <option value="ja">Japanese</option>
-              </select>
-            </div>
-          </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium">TTS Voice (Google Gemini)</label>
+          <select
+            value={GOOGLE_TTS_VOICES.some(v => v.id === config.tts_voice) ? config.tts_voice : 'custom'}
+            onChange={(e) => handleChange('tts_voice', e.target.value === 'custom' ? config.tts_voice : e.target.value)}
+            className="w-full rounded border border-white/10 bg-white/5 p-2 text-sm focus:border-white/30 focus:outline-none"
+          >
+            {GOOGLE_TTS_VOICES.map(voice => (
+              <option key={voice.id} value={voice.id}>{voice.name}</option>
+            ))}
+            <option value="custom">Custom voice name...</option>
+          </select>
+          <input
+            type="text"
+            value={config.tts_voice}
+            onChange={(e) => handleChange('tts_voice', e.target.value)}
+            className="mt-2 w-full rounded border border-white/10 bg-white/5 p-2 text-sm focus:border-white/30 focus:outline-none"
+            placeholder="e.g., Zephyr (leave blank to use default)"
+          />
+          <p className="mt-1 text-xs text-white/60">
+            Uses Google Gemini TTS (preview). Leave empty to use the default voice.
+          </p>
+        </div>
 
-          {/* Voice Selection */}
-          <div>
-            <label className={labelClass}>Voice</label>
-            <select
-              value={isCustomVoice ? 'custom' : config.tts_voice}
-              onChange={(e) => handleVoiceChange(e.target.value)}
-              className={inputClass}
-            >
-              {ELEVENLABS_VOICES.map(voice => (
-                <option key={voice.id} value={voice.id}>{voice.name}</option>
-              ))}
-              <option value="custom">Custom Voice ID...</option>
-            </select>
-            {(isCustomVoice || customVoice) && (
-              <input
-                type="text"
-                value={customVoice || config.tts_voice}
-                onChange={(e) => handleCustomVoiceChange(e.target.value)}
-                className={`${inputClass} mt-2`}
-                placeholder="Enter ElevenLabs Voice ID"
-              />
-            )}
-            <p className="mt-1 text-xs text-white/40">
-              <a
-                href="https://elevenlabs.io/app/voice-library"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-white/60"
-              >
-                Browse ElevenLabs Voice Library →
-              </a>
-            </p>
-          </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium">TTS Language</label>
+          <select
+            value={config.tts_language}
+            onChange={(e) => handleChange('tts_language', e.target.value)}
+            className="w-full rounded border border-white/10 bg-white/5 p-2 text-sm focus:border-white/30 focus:outline-none"
+          >
+            <option value="en">English</option>
+            <option value="hi">Hindi</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+          </select>
+        </div>
 
-          {/* Reset Button */}
+        {/* Action Buttons */}
+        <div className="flex gap-2 pt-2">
+          <button
+            onClick={handleSave}
+            className="flex-1 rounded bg-blue-600 px-4 py-2 text-sm font-medium transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            Save Configuration
+          </button>
           <button
             onClick={handleReset}
-            className="w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+            className="rounded border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20"
           >
-            Reset to Defaults
+            Reset
           </button>
         </div>
-      )}
+      </div>
     </div>
   );
 }
-
