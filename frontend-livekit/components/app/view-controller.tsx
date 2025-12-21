@@ -31,9 +31,11 @@ const VIEW_MOTION_PROPS = {
 interface ViewControllerProps {
   appConfig: AppConfig;
   onStart: () => void;
+  isPhoneCall?: boolean;
+  phoneNumber?: string;
 }
 
-export function ViewController({ appConfig, onStart }: ViewControllerProps) {
+export function ViewController({ appConfig, onStart, isPhoneCall, phoneNumber }: ViewControllerProps) {
   const room = useRoomContext();
   const connectionState = useConnectionState(room);
   const isConnected = connectionState === ConnectionState.Connected;
@@ -51,7 +53,13 @@ export function ViewController({ appConfig, onStart }: ViewControllerProps) {
       )}
       {/* Session view */}
       {isConnected && (
-        <MotionSessionView key="session-view" {...VIEW_MOTION_PROPS} appConfig={appConfig} />
+        <MotionSessionView 
+          key="session-view" 
+          {...VIEW_MOTION_PROPS} 
+          appConfig={appConfig}
+          isPhoneCall={isPhoneCall}
+          phoneNumber={phoneNumber}
+        />
       )}
     </AnimatePresence>
   );

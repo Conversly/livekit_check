@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
     // Parse agent configuration from request body
     const body = await req.json();
-    const agentName: string = body?.room_config?.agents?.[0]?.agent_name;
+    const agentName: string = body?.room_config?.agents?.[0]?.agent_name || process.env.LIVEKIT_AGENT_NAME || 'my-telephony-agent';
     const agentConfig = body?.agent_config;
 
     // Generate participant token
@@ -49,9 +49,9 @@ export async function POST(req: Request) {
       agentConfig
     );
 
-    // Return connection details
+    // Return connection details (keep WebSocket URL for client connection)
     const data: ConnectionDetails = {
-      serverUrl: LIVEKIT_URL,
+      serverUrl: LIVEKIT_URL, // Keep original wss:// URL for client
       roomName,
       participantToken: participantToken,
       participantName,

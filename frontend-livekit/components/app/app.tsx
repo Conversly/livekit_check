@@ -4,6 +4,7 @@ import * as React from 'react';
 import { LiveKitRoom, RoomAudioRenderer, StartAudio } from '@livekit/components-react';
 import type { AppConfig } from '@/app-config';
 import { AgentConfig, defaultAgentConfig, type AgentConfigState } from '@/components/app/agent-config';
+import { PhoneCallInput } from '@/components/app/phone-call-input';
 import { ViewController } from '@/components/app/view-controller';
 import { Toaster } from '@/components/livekit/toaster';
 import { useAgentErrors } from '@/hooks/useAgentErrors';
@@ -22,58 +23,101 @@ interface AppProps {
   appConfig: AppConfig;
 }
 
+type CallMode = 'voice' | 'phone';
+
 // Configuration Phase Component - shown before connection
 function ConfigurationPhase({
   appConfig,
   agentConfig,
   onConfigChange,
   onStartCall,
+  onMakePhoneCall,
   isLoading
 }: {
   appConfig: AppConfig;
   agentConfig: AgentConfigState;
   onConfigChange: (config: AgentConfigState) => void;
   onStartCall: () => void;
+  onMakePhoneCall: (phoneNumber: string) => void;
   isLoading: boolean;
 }) {
+  const [callMode, setCallMode] = React.useState<CallMode>('voice');
+
   return (
     <div className="min-h-svh flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-white mb-2">Voice AI Assistant</h1>
-          <p className="text-white/60 text-sm">Configure your agent settings below, then start the conversation</p>
+          <h1 className="text-3xl font-bold text-black mb-2">Voice AI Assistant</h1>
+          <p className="text-black/70 text-sm">Choose how you want to interact with the agent</p>
+        </div>
+
+        {/* Mode Toggle */}
+        <div className="flex gap-2 p-1 bg-gray-100 rounded-lg border border-gray-300">
+          <button
+            type="button"
+            onClick={() => setCallMode('voice')}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+              callMode === 'voice'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-black/70 hover:text-black'
+            }`}
+          >
+            Voice Call
+          </button>
+          <button
+            type="button"
+            onClick={() => setCallMode('phone')}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all ${
+              callMode === 'phone'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-black/70 hover:text-black'
+            }`}
+          >
+            Phone Call
+          </button>
         </div>
 
         {/* Configuration Panel */}
-        <AgentConfig
-          config={agentConfig}
-          onConfigChange={onConfigChange}
-          isConfigPhase={true}
-        />
+        <div className="space-y-4">
+          <AgentConfig
+            config={agentConfig}
+            onConfigChange={onConfigChange}
+            isConfigPhase={true}
+          />
 
-        {/* Start Button */}
-        <button
-          onClick={onStartCall}
-          disabled={isLoading}
-          className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4 text-lg font-bold text-white transition-all hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
-        >
-          {isLoading ? (
-            <span className="flex items-center justify-center gap-2">
-              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              Connecting...
-            </span>
+          {/* Phone Call Input or Voice Call Button */}
+          {callMode === 'phone' ? (
+            <PhoneCallInput
+              onCall={onMakePhoneCall}
+              isLoading={isLoading}
+              disabled={isLoading}
+            />
           ) : (
-            appConfig.startButtonText || 'Start Conversation'
+            <>
+              <button
+                onClick={onStartCall}
+                disabled={isLoading}
+                className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4 text-lg font-bold text-white transition-all hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Connecting...
+                  </span>
+                ) : (
+                  appConfig.startButtonText || 'Start Conversation'
+                )}
+              </button>
+              <p className="text-black/60 text-xs text-center">
+                Note: Configuration can only be changed before connecting
+              </p>
+            </>
           )}
-        </button>
-
-        <p className="text-white/40 text-xs text-center">
-          Note: Configuration can only be changed before connecting
-        </p>
+        </div>
       </div>
     </div>
   );
@@ -82,14 +126,18 @@ function ConfigurationPhase({
 // Connected Session Component - shown during active session
 function ConnectedSession({
   appConfig,
+  isPhoneCall,
+  phoneNumber,
 }: {
   appConfig: AppConfig;
+  isPhoneCall?: boolean;
+  phoneNumber?: string;
 }) {
   return (
     <>
       <AppSetup />
       <main className="grid h-svh grid-cols-1 place-content-center">
-        <ViewController appConfig={appConfig} onStart={() => { }} />
+        <ViewController appConfig={appConfig} onStart={() => { }} isPhoneCall={isPhoneCall} phoneNumber={phoneNumber} />
       </main>
       <StartAudio label="Start Audio" />
       <RoomAudioRenderer />
@@ -116,12 +164,16 @@ export function App({ appConfig }: AppProps) {
   const [connectionDetails, setConnectionDetails] = React.useState<{
     serverUrl: string;
     participantToken: string;
+    isPhoneCall?: boolean;
+    phoneNumber?: string;
   } | null>(null);
   const [shouldConnect, setShouldConnect] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [callMode, setCallMode] = React.useState<CallMode>('voice');
 
   const handleStartCall = React.useCallback(async () => {
     setIsLoading(true);
+    setCallMode('voice');
     console.log('Starting call with config:', agentConfig);
     try {
       const response = await fetch('/api/connection-details', {
@@ -129,20 +181,57 @@ export function App({ appConfig }: AppProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           agent_config: agentConfig,
-          room_config: appConfig.agentName ? {
-            agents: [{ agent_name: appConfig.agentName }]
-          } : undefined
+          room_config: {
+            agents: [{ agent_name: appConfig.agentName || 'my-telephony-agent' }]
+          }
         }),
       });
       const data = await response.json();
       console.log('Connection details received:', data);
-      setConnectionDetails(data);
+      setConnectionDetails({
+        ...data,
+        isPhoneCall: false,
+      });
       setShouldConnect(true);
     } catch (e) {
       console.error('Failed to fetch token', e);
       setIsLoading(false);
     }
   }, [agentConfig, appConfig.agentName]);
+
+  const handleMakePhoneCall = React.useCallback(async (phoneNumber: string) => {
+    setIsLoading(true);
+    setCallMode('phone');
+    console.log('Making phone call to:', phoneNumber, 'with config:', agentConfig);
+    try {
+      const response = await fetch('/api/make-call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone_number: phoneNumber,
+          agent_config: agentConfig,
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to make call');
+      }
+      
+      const data = await response.json();
+      console.log('Call initiated, connection details received:', data);
+      setConnectionDetails({
+        ...data,
+        isPhoneCall: true,
+        phoneNumber: phoneNumber,
+      });
+      setShouldConnect(true);
+    } catch (e) {
+      console.error('Failed to make phone call', e);
+      alert(e instanceof Error ? e.message : 'Failed to make phone call. Please check your configuration.');
+      setIsLoading(false);
+    }
+  }, [agentConfig]);
 
   const handleDisconnect = React.useCallback(() => {
     setShouldConnect(false);
@@ -166,6 +255,7 @@ export function App({ appConfig }: AppProps) {
           agentConfig={agentConfig}
           onConfigChange={setAgentConfig}
           onStartCall={handleStartCall}
+          onMakePhoneCall={handleMakePhoneCall}
           isLoading={isLoading}
         />
         <Toaster />
@@ -183,7 +273,11 @@ export function App({ appConfig }: AppProps) {
       audio={true}
       onDisconnected={handleDisconnect}
     >
-      <ConnectedSession appConfig={appConfig} />
+      <ConnectedSession 
+        appConfig={appConfig} 
+        isPhoneCall={connectionDetails.isPhoneCall}
+        phoneNumber={connectionDetails.phoneNumber}
+      />
       <Toaster />
     </LiveKitRoom>
   );
